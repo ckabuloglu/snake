@@ -8,13 +8,13 @@ import random
 # define colors
 BLACK = (0,0,0)
 WHITE = (255,255,255)
-GREEN = (196,247,160)
+BACKG = (133, 175, 242)
 RED = (209, 20, 20)
 
 random.seed()
 
 class Board():
-    def __init__(self, snake, color, width, height, surface):
+    def __init__(self, snake, color, width, height, high, surface):
         self.snake = snake
         self.color = color
         self.width = width
@@ -27,7 +27,8 @@ class Board():
         self.tileSize = ((self.width - 2 * self.offset) // self.gridX, (self.height - 2 * self.offset) // self.gridY)
         self.food = None
         self.score = -1
-        self.speed = 1
+        self.speed = 100
+        self.HIGHSCORE = high
 
     def drawBoard(self):
         pygame.draw.rect(self.surface, BLACK, [self.offset - 2, self.offset - 2, self.width - 2 * (self.offset - 2),
@@ -45,14 +46,20 @@ class Board():
             food = (random.randint(1,19), random.randint(1,19))
         self.food = food
         self.score += 1
-        self.speed += 1
+        self.speed *= 2
         self.drawFood()
 
     def drawFood(self):
+        foodColor = (random.randrange(0,255), random.randrange(0,255), random.randrange(0,255))
         text = "SCORE: " + str(self.score)
-        putText(text, 30, BOARD_HEIGHT - TEXT_SIZE - 10, GREEN, TEXT_SIZE, surface)
+        putText(text, 30, BOARD_HEIGHT - TEXT_SIZE - 10, BACKG, TEXT_SIZE, surface)
+        if self.score > self.HIGHSCORE:
+            highText = "HIGHSCORE: " + str(self.score)
+        else:
+            highText = "HIGHSCORE: " + str(self.HIGHSCORE)
+        putText(highText, BOARD_WIDTH - 190, BOARD_HEIGHT - TEXT_SIZE - 10, BACKG, TEXT_SIZE, surface)
         newCoord = (self.offset + self.food[0] * self.tileSize[0], self.offset + self.food[1] * self.tileSize[1])
-        pygame.draw.rect(surface, RED, [newCoord[0] + 2, newCoord[1] + 2, self.tileSize[0] - 4, self.tileSize[1] - 4])
+        pygame.draw.rect(surface, foodColor, [newCoord[0] + 2, newCoord[1] + 2, self.tileSize[0] - 4, self.tileSize[1] - 4])
 
 class Snake():
     def __init__(self):
@@ -72,12 +79,16 @@ class Snake():
 
         self.nextSnake()
         if self.head in self.bodyGrid[1:]:
+            if board.score > board.HIGHSCORE:
+                f.open('highscore.txt','w')
+                f.write(str(board.score))
+                f.close
             pygame.quit()
             quit()
         elif not self.head == board.food:
             oldX, oldY = self.bodyGrid.pop()
             oldCoord = (offset + oldX * width, offset + oldY * height)
-            pygame.draw.rect(surface, GREEN, [oldCoord[0] + 2, oldCoord[1] + 2, width-4, height-4])
+            pygame.draw.rect(surface, BACKG, [oldCoord[0] + 2, oldCoord[1] + 2, width-4, height-4])
         else:
             board.newFood(self)
 
@@ -101,20 +112,26 @@ BOARD_HEIGHT = 600
 TEXT_SIZE = 20
 
 DIRECTIONS = {'right':(1,0), 'down':(0,1), 'left':(-1,0), 'up':(0,-1)}
+# DIRECTIONS = {0:(1,0), 1:(0,1), 2:(-1,0), 3:(0,-1)}
 
 pygame.init()
 clock = pygame.time.Clock()
 
 surface = pygame.display.set_mode((BOARD_WIDTH, BOARD_HEIGHT))
-surface.fill(GREEN)
+surface.fill(BACKG)
 pygame.display.set_caption('Snake')
 
+f = open('highscore.txt', 'r+')
+hs = int(f.read())
+f.close()
+
 snake = Snake()
-board = Board(snake, GREEN, BOARD_WIDTH, BOARD_HEIGHT, surface)
+board = Board(snake, BACKG, BOARD_WIDTH, BOARD_HEIGHT, hs, surface)
 
 board.drawBoard()
-# putText("SCORE: ", 30, BOARD_HEIGHT - TEXT_SIZE - 10, GREEN, TEXT_SIZE, surface)
+putText("SNAKE 1.0 ", BOARD_WIDTH / 2 - 50, 15, BACKG, TEXT_SIZE, surface)
 
+step = 0
 
 while True:
     for event in pygame.event.get():
@@ -140,6 +157,4 @@ while True:
         
     board.drawSnake()
     pygame.display.update()
-    clock.tick(board.speed)
-
-
+    clock.tick(10)
